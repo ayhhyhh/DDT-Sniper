@@ -50,7 +50,7 @@ def listen():
 
 
 listen_thread = Thread(target=listen)
-listen_thread.setDaemon(True)
+listen_thread.daemon = True
 listen_thread.start()
 
 while True:
@@ -76,7 +76,7 @@ while True:
         if game:
             mouse_pos, game_pos = win32api.GetCursorPos(), win32gui.GetWindowRect(game.handle)
             pos = ((mouse_pos[0] - game_pos[0]) / 1000, (mouse_pos[1] - game_pos[1]) / 600)
-            if game.find('find', pos=(510, 169), rgb=(222, 194, 106)):
+            try:
                 game.read()
                 window['text-angle'].update(f'Angle: {game.angle}')
                 window['text-wind'].update(f'Wind: {game.wind}')
@@ -92,5 +92,5 @@ while True:
                         distance[1]
                     )
                     window['text-suggestion'].update(f'Suggestion: {strength:.1f}')
-                else:
-                    window['text-suggestion'].update('Suggestion: None')
+            except :
+                continue
