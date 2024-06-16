@@ -1,4 +1,5 @@
-ddtank==1.1.3
-pywin32~=227
-pynput~=1.7.6
-pysimplegui~=4.60.4
+pywin32==304
+pynput==1.7.6
+pysimplegui==4.60.4
+opencv-python
+scipy
