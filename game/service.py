@@ -21,54 +21,33 @@ class ReadException(Exception):
 
 
 class GameService:
-    def get_game() -> dict:
+
+    @staticmethod
+    def find_flash_player_window_by_handle(handle) -> int:
         """
-        注意，我们会获取所有1000*600的MacromediaFlashPlayerActiveX类子窗口句柄
-        对于这些窗口是否能够成功截图或模拟操作，应该由您自己来确认
-        因此，我们建议您使用流行的登陆器来执行游戏脚本
-
-        Args:
-            None
-
-        Returns:
-            dict: {窗口名: 游戏子窗口句柄(int)}
-
+        根据给定的窗口句柄，查找符合条件的MacromediaFlashPlayerActiveX子窗口句柄。
         """
-        parent_hwnd_list, games = [], {}
-        win32gui.EnumWindows(lambda hwnd, param: param.append(hwnd), parent_hwnd_list)
-        for parent_hwnd in parent_hwnd_list:
-            if win32gui.IsWindowVisible(parent_hwnd):
-                child_hwnd_list = []
-                win32gui.EnumChildWindows(
-                    parent_hwnd, lambda hwnd, param: param.append(hwnd), child_hwnd_list
-                )
-                for child_hwnd in child_hwnd_list:
-                    class_name = win32gui.GetClassName(child_hwnd)
-                    if class_name == "MacromediaFlashPlayerActiveX":
-                        shape = win32gui.GetWindowRect(child_hwnd)
-                        height = shape[3] - shape[1]
-                        weight = shape[2] - shape[0]
-                        if weight == 1000 and height == 600:
-                            games[win32gui.GetWindowText(parent_hwnd)] = child_hwnd
-        return games
-
-    def get_game_by_title(title_substring: str) -> int:
-        """
-        通过窗口标题的部分字符串来获取游戏窗口句柄
-
-        Args:
-            str: substring in window title
-
-        Returns:
-            int: specific window handle, if not exist, return 0
-
-        """
-        hwnd_dict = GameService.get_game()
-        print(hwnd_dict)
-        for k, v in hwnd_dict.items():
-            if title_substring in k:
-                return v
+        child_hwnd_list = []
+        win32gui.EnumChildWindows(
+            handle, lambda hwnd, param: param.append(hwnd), child_hwnd_list
+        )
+        for child_hwnd in child_hwnd_list:
+            class_name, shape = win32gui.GetClassName(
+                child_hwnd
+            ), win32gui.GetWindowRect(child_hwnd)
+            height = shape[3] - shape[1]
+            weight = shape[2] - shape[0]
+            if (
+                class_name == "MacromediaFlashPlayerActiveX"
+                and weight == 1000
+                and height == 600
+            ):
+                return child_hwnd
         return 0
+
+    @staticmethod
+    def is_game(handle) -> bool:
+        return GameService.find_flash_player_window_by_handle(handle) != 0
 
     @staticmethod
     def activate(handle):
@@ -154,37 +133,34 @@ class GameService:
             0,
             255,
         ).astype("uint8")
-        cv2.imshow("Image", img)
         contours, hierarchy = cv2.findContours(
             img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
         )
-        print(contours)
+        if len(contours) == 0:
+            raise ReadException("Can't read white box, because small map is moving")
         for cnt in contours:
             x, y, w, h = cv2.boundingRect(cnt)
             if w > 30:
                 white_box_pos = (x, y)
                 white_box_width = w / 10
                 return white_box_pos, white_box_width
-        return None
 
     @staticmethod
     def read_circle(image1, image2):
 
-        map_left_bound = GameService.read_small_map(image)
-        capture_1 = image1[map_left_bound, 24, 998 - map_left_bound, 120 - 24]
+        map_left_bound = GameService.read_small_map(image1)
+        capture_1 = image1[24:120, map_left_bound:998]
         capture_1 = cv2.cvtColor(capture_1, cv2.COLOR_BGR2GRAY)
-
-        capture_2 = image2[map_left_bound, 24, 998 - map_left_bound, 120 - 24]
+        capture_2 = image2[24:120, map_left_bound:998]
         capture_2 = cv2.cvtColor(capture_2, cv2.COLOR_BGR2GRAY)
         image = np.where(capture_1 == capture_2, 255, 0).astype("uint8")
+        cv2.imshow("1", image)
         contours, _ = cv2.findContours(image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        # 这里可能self_x, self_y没有定义
         for cnt in contours:
             x, y, w, h = cv2.boundingRect(cnt)
-            if 15 < w < 25 or 15 < h < 25 and w == h:
+            if 5 < w < 25 or 5 < h < 25:
                 self_x = int(x + w / 2)
                 self_y = int(y + h / 2)
                 return self_x, self_y
-
-        return (self_x, self_y)
+        raise ReadException("Can't read circle")
