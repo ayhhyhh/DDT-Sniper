@@ -67,8 +67,8 @@ while True:
                 window['text-window'].update(f'Window: {title}')
                 game = Status(game_handle)
             else:
-                window['text-window'].update(f'Window: Not a game window.')
                 game = None
+                window['text-window'].update(f'Window: Not a game window.')
                 window['text-angle'].update('Angle: None')
                 window['text-wind'].update('Wind: None')
                 window['text-location'].update('Location: None')
