@@ -41,7 +41,7 @@ class Player:
             self.box_pos, self.box_width = GameService.read_white_box(image)
 
             image1 = GameService.capture(self.handle, self.mfc_dc, self.save_dc, self.save_bit_map)
-            self.__sleep(30)
+            self.__sleep(100)
             image2 = GameService.capture(self.handle, self.mfc_dc, self.save_dc, self.save_bit_map)
             self.circle = GameService.read_circle(image1, image2)
         except Exception as e:

@@ -64,8 +64,9 @@ while True:
         exit()
 
     handle = win32gui.GetForegroundWindow()
+    title = win32gui.GetWindowText(handle)
+    window["text-window"].update(f"Window: {title}")
     if not GameService.is_game(handle):
-        window["text-window"].update(f"Window: Not a game window.")
         window["text-angle"].update("Angle: None")
         window["text-wind"].update("Wind: None")
         window["text-location"].update("Location: None")
@@ -92,18 +93,19 @@ while True:
         window["text-location"].update(f"Location: {game.circle}")
         x = game.box_pos[0] + pos[0] * game.box_width * 10
         y = game.box_pos[1] + pos[1] * game.box_width * 6
-        distance = (
-            (x - game.circle[0]) / game.box_width,
-            -(y - game.circle[1]) / game.box_width,
-        )
-        window["text-distance"].update(
-            f"Distance: {distance[0]:.1f}, {distance[1]:.1f}"
-        )
+        if game.box_width:
+            distance = (
+                (x - game.circle[0]) / game.box_width,
+                -(y - game.circle[1]) / game.box_width,
+            )
+            window["text-distance"].update(
+                f"Distance: {distance[0]:.1f}, {distance[1]:.1f}"
+            )
 
-        strength = operate_calculate_strength(
-            game.angle,
-            game.wind * math.copysign(1, distance[0]),
-            abs(distance[0]),
-            distance[1],
-        )
-        window["text-suggestion"].update(f"Suggestion: {strength:.1f}")
+            strength = operate_calculate_strength(
+                game.angle,
+                game.wind * math.copysign(1, distance[0]),
+                abs(distance[0]),
+                distance[1],
+            )
+            window["text-suggestion"].update(f"Suggestion: {strength:.1f}")

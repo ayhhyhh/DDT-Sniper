@@ -145,6 +145,26 @@ class GameService:
                 white_box_width = w / 10
                 return white_box_pos, white_box_width
 
+    # @staticmethod
+    # def read_circle(image1, image2):
+
+    #     map_left_bound = GameService.read_small_map(image1)
+    #     capture_1 = image1[24:120, map_left_bound:998]
+    #     capture_1 = cv2.cvtColor(capture_1, cv2.COLOR_BGR2GRAY)
+    #     capture_2 = image2[24:120, map_left_bound:998]
+    #     capture_2 = cv2.cvtColor(capture_2, cv2.COLOR_BGR2GRAY)
+    #     image = np.where(capture_1 == capture_2, 255, 0).astype("uint8")
+    #     cv2.imshow("1", image)
+    #     contours, _ = cv2.findContours(image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+    #     for cnt in contours:
+    #         x, y, w, h = cv2.boundingRect(cnt)
+    #         if 5 < w < 25 or 5 < h < 25:
+    #             self_x = int(x + w / 2)
+    #             self_y = int(y + h / 2)
+    #             return self_x, self_y
+    #     raise ReadException("Can't read circle")
+    
     @staticmethod
     def read_circle(image1, image2):
 
@@ -154,13 +174,27 @@ class GameService:
         capture_2 = image2[24:120, map_left_bound:998]
         capture_2 = cv2.cvtColor(capture_2, cv2.COLOR_BGR2GRAY)
         image = np.where(capture_1 == capture_2, 255, 0).astype("uint8")
-        cv2.imshow("1", image)
-        contours, _ = cv2.findContours(image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        for cnt in contours:
-            x, y, w, h = cv2.boundingRect(cnt)
-            if 5 < w < 25 or 5 < h < 25:
-                self_x = int(x + w / 2)
-                self_y = int(y + h / 2)
-                return self_x, self_y
+
+
+        image = cv2.morphologyEx(image, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
+        image = cv2.medianBlur(image, 5)
+        image = cv2.Canny(image, 50, 100)
+        cv2.imshow("1", image)
+        def fit_circle_to_contours(image, contours):
+            detected_circles = []
+            for contour in contours:
+                if len(contour) >= 5:  # At least 5 points are needed to fit an ellipse
+                    (x, y), radius = cv2.minEnclosingCircle(contour)
+                    if radius > 1:
+                        detected_circles.append((int(x), int(y), int(radius)))
+            return detected_circles
+        contours, _ = cv2.findContours(image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        detected_circles = fit_circle_to_contours(image, contours)
+        for (x, y, radius) in detected_circles:
+            cv2.circle(image, (x, y), 1, (0, 100, 100), 3)  # Draw center
+            cv2.circle(image, (x, y), radius, (255, 0, 255), 3)  # Draw circumference
+            cv2.imshow("1", image)
+            return x, y
+
         raise ReadException("Can't read circle")
