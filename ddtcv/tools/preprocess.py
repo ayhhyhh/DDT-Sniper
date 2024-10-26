@@ -17,7 +17,7 @@ def resize_norm_img(rec_image_shape: tuple, img: np.ndarray, max_wh_ratio: float
         resized_w = int(math.ceil(imgH * ratio))
 
     resized_image = cv.resize(img, (resized_w, imgH))
-    resized_image = resized_image.astype('float32')
+    resized_image = resized_image.astype("float32")
     resized_image = resized_image.transpose((2, 0, 1)) / 255
     resized_image -= 0.5
     resized_image /= 0.5
@@ -26,7 +26,7 @@ def resize_norm_img(rec_image_shape: tuple, img: np.ndarray, max_wh_ratio: float
     return padding_im
 
 
-def ctc_preprocess(image: np.ndarray, rec_image_shape:tuple):
+def ctc_preprocess(image: np.ndarray, rec_image_shape: tuple):
     imgC, imgH, imgW = rec_image_shape[:3]
     max_wh_ratio = imgW / imgH
     h, w = image.shape[0:2]

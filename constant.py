@@ -1,0 +1,7 @@
+WINDOW_HEIGHT = 600
+WINDOW_WIDTH = 1000
+WIND_DIRECTION_POINT = (21, 468)
+
+SMALL_MAP_BAR_COLOR = (160, 160, 160)
+WHITE_BOX_ROI = {"start_row": 24, "end_row": 120, "start_col": 750, "end_col": 998}
+WHITE_BOX_COLOR = (153, 153, 153)

@@ -3,3 +3,6 @@
 
 image.png
 **/__pycache__/**
+
+game_image/
+build/

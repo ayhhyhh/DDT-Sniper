@@ -19,7 +19,11 @@ class ONNXModel(CVModel):
 
     def predict(self, image: np.ndarray):
         d_height, d_width, d_channel = image.shape
-        input_image_shape = (d_channel, d_height, d_width)  # 模型的输入维度：通道数 * 高度 * 宽度
+        input_image_shape = (
+            d_channel,
+            d_height,
+            d_width,
+        )  # 模型的输入维度：通道数 * 高度 * 宽度
         norm_image = self._preprocess_func(image, input_image_shape)  # 进行数据预处理
 
         # 使用模型对预处理数据进行运算
@@ -29,4 +33,3 @@ class ONNXModel(CVModel):
         # 将模型的输出进行后处理，得到识别结果
         res = self._postprocess_func(output)[0][0]
         return res
-
