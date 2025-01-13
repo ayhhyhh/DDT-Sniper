@@ -14,11 +14,12 @@ import math
 import numpy as np
 from scipy.optimize import fsolve
 
-from typing import Union, Literal, Callable, Optional
 from threading import Thread
 from ctypes import windll
 from constant import *
 import logging
+from typing import Tuple
+from game.datamodel import *
 
 logger = logging.getLogger(__name__)
 
@@ -77,9 +78,9 @@ class GameService:
         return img
 
     @staticmethod
-    def read_wind(
+    def readWind(
         image,
-    ) -> float | None:
+    ) -> WindResult:
         """get wind from image
 
         Args:
@@ -93,13 +94,13 @@ class GameService:
         right = 1 if b == 252 and g == r and g > 240 and r > 240 else -1
 
         try:
-            return Wind(image) * right
+            return WindResult(True, Wind(image) * right)
         except Exception as e:
-            logger.info("Wind reading failed: %s", e)
-            return None
+            logger.info("Wind Reading Failed: %s", e)
+            return WindResult(False)
 
     @staticmethod
-    def read_angle(image) -> int | None:
+    def readAngle(image) -> AngleResult:
         """get angle from image
 
         Args:
@@ -109,13 +110,13 @@ class GameService:
             int: Angel, absolute value
         """
         try:
-            return Angle(image)
+            return AngleResult(True, Angle(image))
         except Exception as e:
-            logger.info("Wind reading failed: %s", e)
-            return None
+            logger.info("Wind Reading Failed: %s", e)
+            return AngleResult(False)
 
     @staticmethod
-    def read_small_map(image):
+    def readSmallMap(image):
         """Get the left pos from image
 
         Args:
@@ -125,19 +126,21 @@ class GameService:
             int: The left position of the small map
         """
         try:
-            return (
+            return Result(
+                True,
                 np.argwhere(np.all(image[1, 750:] == SMALL_MAP_BAR_COLOR, axis=-1))[
                     0, 0
                 ]
-                + 742
+                + 742,
             )
         except IndexError:
             logger.info("Can't Find Small Map Left Bound.")
+            return Result(False)
 
     @staticmethod
-    def read_white_box(
+    def readWhiteBox(
         image,
-    ) -> tuple[tuple[int, int], tuple[int, int]] | tuple[None, None]:
+    ) -> Tuple[Result, Result]:
         """
         Detect the position and width of the white box in the game image.
 
@@ -150,7 +153,12 @@ class GameService:
         """
 
         # Extract the region of interest from the image
-        left_bound = GameService.read_small_map(image)
+        left_bound_result = GameService.readSmallMap(image)
+        if not left_bound_result.success:
+            return Result(False), Result(False)
+
+        left_bound = left_bound_result.value
+
         roi_image = image[
             WHITE_BOX_ROI["start_row"] : WHITE_BOX_ROI["end_row"],
             left_bound : WHITE_BOX_ROI["end_col"],
@@ -170,17 +178,17 @@ class GameService:
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
             if w > 30:
-                return (x, y), (w, h)
+                return Result(True, (x, y)), Result(True, (w, h))
 
         # If no contours are found, log the information and return None
         if not contours:
             logging.warning("No white box detected;")
-        return None, None
+        return Result(False), Result(False)
 
     @staticmethod
-    def read_circle(image1, image2):
+    def readCircle(image1, image2):
 
-        map_left_bound = GameService.read_small_map(image1)
+        map_left_bound = GameService.readSmallMap(image1)
         capture_1 = image1[
             WHITE_BOX_ROI["start_row"] : WHITE_BOX_ROI["end_row"],
             map_left_bound : WHITE_BOX_ROI["end_col"],
@@ -210,9 +218,9 @@ class GameService:
         detected_circles = fit_circle_to_contours(image, contours)
         for x, y, radius in detected_circles:
             logger.info(f"Detected circle at ({x}, {y}) with radius {radius}")
-            return x, y
+            return PositionResult(True, x, y)
 
-        return None, None
+        return PositionResult(False)
 
     def operate_calculate_strength(angel, wind, dx, dy):
         if not dx:

@@ -5,6 +5,8 @@ import logging
 import numpy as np
 from constant import *
 import math
+from typing import Tuple
+from game.datamodel import *
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +32,14 @@ class Player:
         self.manual = False
         self.drawing = False
 
-        self.wind = 0
-        self.angle = 0
-        self.map_left_bound = 0
-        self.box_pos = (0, 0)
-        self.box_size = (0, 0)
-        self.circle = (0, 0)
+        self.wind = WindStatus(StatusEnum.INIT, 0)
+        self.angle = AngleStatus(StatusEnum.INIT, 0)
+        self.map = MapStatus(StatusEnum.INIT, 0, (0, 0), (0, 0))
+        
+        self.mapLeftBound = 0
+        self.boxPosition = (0, 0)
+        self.boxSize = (0, 0)
+        self.circlePosition = (0, 0)
         self.distance = (0, 0)
         self.strength = 0.0
 
@@ -45,33 +49,34 @@ class Player:
 
     def update_circle_manual(self, mouse_pos):
         self.update_info()
-        self.circle = (
-            int(mouse_pos[0] / WINDOW_WIDTH * self.box_size[0] + self.box_pos[0]),
-            int(mouse_pos[1] / WINDOW_HEIGHT * self.box_size[1] + self.box_pos[1]),
+        self.circlePosition = (
+            int(mouse_pos[0] / WINDOW_WIDTH * self.boxSize[0] + self.boxPosition[0]),
+            int(mouse_pos[1] / WINDOW_HEIGHT * self.boxSize[1] + self.boxPosition[1]),
         )
 
     def update_info(self, target_pos: tuple[int, int] = None):
         image = GameService.capture(
             self.handle, self.mfc_dc, self.save_dc, self.save_bit_map
         )
+
+        windResult = GameService.readWind(image)
+        if windResult.success:
+            self.wind = windResult.value
+
+        angleResult = GameService.readAngle(image)
+        if angleResult.success:
+            self.angle = angleResult.value
+
+        mapLeftBoundResult = GameService.readSmallMap(image)
+        if mapLeftBoundResult.success:
+            self.mapLeftBound = mapLeftBoundResult.value
+
+        boxPosResult, boxSizeResult = GameService.readWhiteBox(image)
+        if boxPosResult.success and boxSizeResult.success:
+            self.boxPosition = boxPosResult.value
+            self.boxSize = boxSizeResult.value
+
         try:
-            wind = GameService.read_wind(image)
-            if wind is not None:
-                self.wind = wind
-
-            angle = GameService.read_angle(image)
-            if angle is not None:
-                self.angle = angle
-
-            map_left_bound = GameService.read_small_map(image)
-            if map_left_bound is not None:
-                self.map_left_bound = map_left_bound
-
-            box_pos, box_size = GameService.read_white_box(image)
-            if box_pos is not None and box_size is not None:
-                self.box_pos = box_pos
-                self.box_size = box_size
-
             if self.manual:
                 pass
             else:
@@ -82,16 +87,16 @@ class Player:
                 image2 = GameService.capture(
                     self.handle, self.mfc_dc, self.save_dc, self.save_bit_map
                 )
-                circle = GameService.read_circle(image1, image2)
+                circle = GameService.readCircle(image1, image2)
                 if circle is not None:
-                    self.circle = circle
+                    self.circlePosition = circle
 
-            x = self.box_pos[0] + target_pos[0] / WINDOW_WIDTH * self.box_size[0]
-            y = self.box_pos[1] + target_pos[1] / WINDOW_HEIGHT * self.box_size[1]
+            x = self.boxPosition[0] + target_pos[0] / WINDOW_WIDTH * self.boxSize[0]
+            y = self.boxPosition[1] + target_pos[1] / WINDOW_HEIGHT * self.boxSize[1]
 
             distance = (
-                (x - self.circle[0]) / self.box_size[0] * 10,
-                -(y - self.circle[1]) / self.box_size[1] * 10,
+                (x - self.circlePosition[0]) / self.boxSize[0] * 10,
+                -(y - self.circlePosition[1]) / self.boxSize[1] * 10,
             )
             self.distance = distance
             self.strength = GameService.operate_calculate_strength(

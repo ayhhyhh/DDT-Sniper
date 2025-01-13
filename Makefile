@@ -33,3 +33,6 @@ lint:
 	@echo "检查代码风格..."
 	$(LINTER) $(SRC_DIR)
 	@echo "代码风格检查完成。"
+
+package:
+	pyinstaller sniper.spec

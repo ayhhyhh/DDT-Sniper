@@ -33,11 +33,11 @@ window = sg.Window(
     "ddtankSniper",
     layout,
     keep_on_top=True,
-    location=(0, 0),
+    # location=(0, 0),
     size=(320, 250),
-    no_titlebar=True,
+    # no_titlebar=True,
     margins=(0, 0),
-    finalize=True,
+    # finalize=True,
 )
 
 old_handle: int = 0
@@ -119,7 +119,7 @@ while True:
         game.update_info(target_pos)
         window["text-angle"].update(f"Angle: {game.angle}")
         window["text-wind"].update(f"Wind: {game.wind}")
-        window["text-location"].update(f"Location: {game.circle}")
+        window["text-location"].update(f"Location: {game.circlePosition}")
         window["text-distance"].update(
             f"Distance: {game.distance[0]:.1f}, {game.distance[1]:.1f}"
         )
